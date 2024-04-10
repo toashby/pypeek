@@ -140,10 +140,15 @@ class DrawOver(QMainWindow):
         close_button = DrawOver.create_button("Close")
         close_button.setFixedWidth(100)
         close_button.clicked.connect(self.close)
+        copy_button = DrawOver.create_button(u"\U0001F4CB Copy")
+        copy_button.setFixedWidth(100)
+        copy_button.clicked.connect(self.copy_to_clipboard)
         save_layout = QHBoxLayout()
         save_layout.setSpacing(10)
         save_layout.setContentsMargins(20,20,20,20)
         save_layout.addStretch(1)
+        if not self.is_sequence:
+            save_layout.addWidget(copy_button)
         save_layout.addWidget(close_button)
         save_layout.addWidget(save_button)
 
@@ -392,6 +397,32 @@ class DrawOver(QMainWindow):
             self._parent.recording_drawover_done(self)
         else:
             self._parent.snapshot_drawover_done(self) and self.close()
+
+    def copy_to_clipboard(self):
+        if len(self.items) > 0:
+            range = (self.slider.minimum(), self.slider.maximum() + 1) if self.slider else None
+            drawover_image_path = os.path.join(self.out_path, self.out_filename)
+            self.encode_options = {"drawover_image_path": drawover_image_path, "drawover_range":range }
+            self.canvas_widget.hide()
+            pixmap = QPixmap(self.canvas_width, self.canvas_height)
+            pixmap.fill(Qt.GlobalColor.transparent)
+            painter = QPainter(pixmap)
+            painter.setRenderHint(QPainter.Antialiasing,True)
+            self.scene.render(painter, QRectF(), QRectF(0, 0, self.canvas_width, self.canvas_height), Qt.KeepAspectRatio)
+            painter.end()
+            self.canvas_widget.show()
+            pixmap.save(drawover_image_path, "png", 100)
+        elif self.slider and (self.slider.minimum() != 0 or self.slider.maximum() != self.frame_count):
+            range = self.slider and (self.slider.minimum(), self.slider.maximum() + 1)
+            self.encode_options = {"drawover_image_path": None, "drawover_range":range }
+
+        if self.slider:
+            self.reset_parent_onclose = False
+            self.close()
+            self._parent.recording_drawover_done(self)
+        else:
+            self._parent.snapshot_drawover_done_clipboard(self) and self.close()
+
 
     def create_canvas(self):
         canvas = QLabel()
