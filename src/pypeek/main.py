@@ -640,6 +640,27 @@ class PyPeek(QMainWindow):
                 logger.error(e)
             
         return False
+    
+    def snapshot_drawover_done_clipboard(self, drawover):
+        """
+        Take the currently cached snapshot, lod to pixmap and add 
+        to clipboard
+
+        Args:
+          drawover: A drawover object
+        
+        Returns
+        :
+          False
+        """
+        filepath = drawover.image_path
+        if drawover.encode_options and drawover.encode_options["drawover_image_path"]:
+            filepath = self.capture.snapshot_drawover(drawover.encode_options["drawover_image_path"])
+
+        pixmap = QPixmap(filepath)
+        QClipboard().setPixmap(pixmap)
+            
+        return False
 
     def record(self):
         self.prepare_capture_ui()
